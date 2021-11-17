@@ -42,6 +42,7 @@ package combinators
 
 import (
 	"strconv"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -61,7 +62,7 @@ func TestChar(t *testing.T) {
 	assert.Equal(t, "foo", string(result.Remaining))
 }
 
-func TestChar_FailsOnNotFoundChar(t *testing.T) {
+func TestCharFailsOnNotFoundChar(t *testing.T) {
 	t.Parallel()
 
 	// Arrange
@@ -76,6 +77,12 @@ func TestChar_FailsOnNotFoundChar(t *testing.T) {
 	assert.Equal(t, "*foo", string(result.Err.Input))
 	assert.Len(t, result.Err.Expected, 1)
 	assert.Equal(t, "(", result.Err.Expected[0])
+}
+
+func BenchmarkChar(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		Char('-')([]rune("-"))
+	}
 }
 
 func TestDigit(t *testing.T) {
@@ -98,7 +105,7 @@ func TestDigit(t *testing.T) {
 	}
 }
 
-func TestDigit_FailsOnOutOfBoundValues(t *testing.T) {
+func TestDigitFailsOnOutOfBoundValues(t *testing.T) {
 	t.Parallel()
 
 	// Arrange
@@ -115,7 +122,13 @@ func TestDigit_FailsOnOutOfBoundValues(t *testing.T) {
 	assert.Equal(t, ":", string(tooHighResult.Remaining), "result should return the input as remaining")
 }
 
-func TestAlpha_LowercaseAlphabetical(t *testing.T) {
+func BenchmarkDigit(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		Digit()([]rune("9"))
+	}
+}
+
+func TestAlphaLowercaseAlphabetical(t *testing.T) {
 	t.Parallel()
 
 	// Arrange
@@ -136,7 +149,7 @@ func TestAlpha_LowercaseAlphabetical(t *testing.T) {
 	}
 }
 
-func TestAlpha_FailsOnOutOfBoundValues(t *testing.T) {
+func TestAlphaFailsOnOutOfBoundValues(t *testing.T) {
 	t.Parallel()
 
 	// Arrange
@@ -159,6 +172,12 @@ func TestAlpha_FailsOnOutOfBoundValues(t *testing.T) {
 	assert.Equal(t, "{", string(higherBoundResult.Remaining), "result should return the input as remaining")
 }
 
+func BenchmarkAlpha(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		Alpha()([]rune("z"))
+	}
+}
+
 func TestLF(t *testing.T) {
 	t.Parallel()
 
@@ -176,6 +195,12 @@ func TestLF(t *testing.T) {
 	assert.NotNil(t, failingResult.Err, "result should hold an error")
 	assert.Equal(t, nil, failingResult.Payload, "result's payload should be empty")
 	assert.Equal(t, "\r\n", string(failingResult.Remaining), "result's remaining should contain the input")
+}
+
+func BenchmarkLF(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		LF()([]rune("\n"))
+	}
 }
 
 func TestCR(t *testing.T) {
@@ -197,6 +222,12 @@ func TestCR(t *testing.T) {
 	assert.Equal(t, "\n", string(failingResult.Remaining), "result's remaining should contain the input")
 }
 
+func BenchmarkCR(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		CR()([]rune("\r"))
+	}
+}
+
 func TestCRLF(t *testing.T) {
 	t.Parallel()
 
@@ -214,6 +245,12 @@ func TestCRLF(t *testing.T) {
 	assert.NotNil(t, failingResult.Err, "result should hold an error")
 	assert.Equal(t, nil, failingResult.Payload, "result's payload should be empty")
 	assert.Equal(t, "\r", string(failingResult.Remaining), "result's remaining should contain the input")
+}
+
+func BenchmarkCRLF(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		CRLF()([]rune("\r\n"))
+	}
 }
 
 func TestNewline(t *testing.T) {
@@ -239,12 +276,30 @@ func TestNewline(t *testing.T) {
 	assert.Equal(t, "\r", string(failingResult.Remaining), "result's remaining should contain the input")
 }
 
+func BenchmarkNewline_LF(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		Newline()([]rune("\n"))
+	}
+}
+
+func BenchmarkNewline_CRLF(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		Newline()([]rune("\r\n"))
+	}
+}
+
 func TestWhileOneOf(t *testing.T) {
 	t.Parallel()
 
 	result := TakeWhileOneOf([]rune("0123456789")...)([]rune("123abc"))
 	assert.Equal(t, "123", result.Payload)
 	assert.Equal(t, "abc", string(result.Remaining))
+}
+
+func BenchmarkTakeWhileOneOf(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		TakeWhileOneOf([]rune("0123")...)([]rune(strings.Repeat("0123", 1024)))
+	}
 }
 
 func TestOptional(t *testing.T) {
@@ -267,7 +322,13 @@ func TestOptional(t *testing.T) {
 	assert.Nil(t, absentResult.Err)
 }
 
-func TestFloat_PositiveWithDecimal(t *testing.T) {
+func BenchmarkOptional(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		Optional(Char('-'))([]rune("-123"))
+	}
+}
+
+func TestFloatPositiveWithDecimal(t *testing.T) {
 	t.Parallel()
 
 	// Arrange
@@ -281,7 +342,7 @@ func TestFloat_PositiveWithDecimal(t *testing.T) {
 	assert.Equal(t, "", string(result.Remaining))
 }
 
-func TestFloat_NegativeWithDecimal(t *testing.T) {
+func TestFloatNegativeWithDecimal(t *testing.T) {
 	t.Parallel()
 
 	// Arrange
@@ -295,7 +356,7 @@ func TestFloat_NegativeWithDecimal(t *testing.T) {
 	assert.Equal(t, "", string(result.Remaining))
 }
 
-func TestFloat_PositiveWithoutDecimal(t *testing.T) {
+func TestFloatPositiveWithoutDecimal(t *testing.T) {
 	t.Parallel()
 
 	// Arrange
@@ -309,7 +370,7 @@ func TestFloat_PositiveWithoutDecimal(t *testing.T) {
 	assert.Equal(t, "", string(result.Remaining))
 }
 
-func TestFloat_NegativeWithoutDecimal(t *testing.T) {
+func TestFloatNegativeWithoutDecimal(t *testing.T) {
 	t.Parallel()
 
 	// Arrange
@@ -323,7 +384,29 @@ func TestFloat_NegativeWithoutDecimal(t *testing.T) {
 	assert.Equal(t, "", string(result.Remaining))
 }
 
-func TestTerm(t *testing.T) {
+func TestFloatInvalidNumberFormat(t *testing.T) {
+	t.Parallel()
+
+	// Arrange
+	parser := Float()
+
+	// Act
+	result := parser([]rune("foo.123"))
+
+	// Assert
+	assert.NotNil(t, result.Err)
+	assert.Len(t, result.Err.Expected, 1)
+	assert.Equal(t, "digits", result.Err.Expected[0])
+	assert.Equal(t, "foo.123", string(result.Err.Input))
+}
+
+func BenchmarkFloat(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		Float()([]rune("1234567890.0987654321"))
+	}
+}
+
+func TestTag(t *testing.T) {
 	t.Parallel()
 
 	result := Tag("foo")([]rune("foo bar"))
@@ -331,7 +414,13 @@ func TestTerm(t *testing.T) {
 	assert.Equal(t, " bar", string(result.Remaining))
 }
 
-func TestOneOf(t *testing.T) {
+func BenchmarkTag(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		Tag("foo")([]rune("foobar"))
+	}
+}
+
+func TestAlternative(t *testing.T) {
 	t.Parallel()
 
 	result := Alternative(Tag("foo"), Tag("bar"), Tag("baz"))([]rune("bar hello"))
@@ -421,7 +510,7 @@ func TestDiscardAll(t *testing.T) {
 	assert.Equal(t, "", string(result.Remaining))
 }
 
-func TestDiscardAll_Sequence(t *testing.T) {
+func TestDiscardAllSequence(t *testing.T) {
 	t.Parallel()
 
 	// Arrange
@@ -454,6 +543,23 @@ func TestSequence(t *testing.T) {
 	assert.Equal(t, "", string(result.Remaining))
 }
 
+func TestSequenceWithFailingSubparser(t *testing.T) {
+	t.Parallel()
+
+	result := Sequence(Tag("foo"), Char(' '), Tag("bar"))([]rune("foobar"))
+
+	assert.NotNil(t, result.Err)
+	assert.Len(t, result.Err.Expected, 1)
+	assert.Equal(t, " ", result.Err.Expected[0])
+	assert.Equal(t, "bar", string(result.Err.Input))
+}
+
+func BenchmarkSequence(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		Sequence(Tag("foo"), Char(' '), Tag("bar"))([]rune("foo bar"))
+	}
+}
+
 func TestPreceded(t *testing.T) {
 	t.Parallel()
 
@@ -469,7 +575,7 @@ func TestPreceded(t *testing.T) {
 	assert.Equal(t, "", string(result.Remaining))
 }
 
-func TestPreceded_FailsOnMissingDelimiterFromInput(t *testing.T) {
+func TestPrecededFailsOnMissingDelimiterFromInput(t *testing.T) {
 	t.Parallel()
 
 	// Arrange
@@ -485,7 +591,7 @@ func TestPreceded_FailsOnMissingDelimiterFromInput(t *testing.T) {
 	assert.Equal(t, "foo", string(result.Err.Input))
 }
 
-func TestPreceded_FailsOnPresentDelimiterButFailingSuccessorParser(t *testing.T) {
+func TestPrecededFailsOnPresentDelimiterButFailingSuccessorParser(t *testing.T) {
 	t.Parallel()
 
 	// Arrange
@@ -499,6 +605,12 @@ func TestPreceded_FailsOnPresentDelimiterButFailingSuccessorParser(t *testing.T)
 	assert.Len(t, result.Err.Expected, 1)
 	assert.Equal(t, "foo", result.Err.Expected[0])
 	assert.Equal(t, "bar", string(result.Err.Input))
+}
+
+func BenchmarkPreceded(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		Preceded(Char('('), Tag("foo"))([]rune("(foo)"))
+	}
 }
 
 func TestTerminated(t *testing.T) {
@@ -516,7 +628,7 @@ func TestTerminated(t *testing.T) {
 	assert.Equal(t, "", string(result.Remaining))
 }
 
-func TestTerminated_FailsOnPresentDelimiterButFailingSuccessorParser(t *testing.T) {
+func TestTerminatedFailsOnPresentDelimiterButFailingSuccessorParser(t *testing.T) {
 	t.Parallel()
 
 	// Arrange
@@ -532,7 +644,7 @@ func TestTerminated_FailsOnPresentDelimiterButFailingSuccessorParser(t *testing.
 	assert.Equal(t, "bar)", string(result.Err.Input))
 }
 
-func TestTerminated_FailsOnMissingDelimiterFromInput(t *testing.T) {
+func TestTerminatedFailsOnMissingDelimiterFromInput(t *testing.T) {
 	t.Parallel()
 
 	// Arrange
@@ -546,6 +658,12 @@ func TestTerminated_FailsOnMissingDelimiterFromInput(t *testing.T) {
 	assert.Len(t, result.Err.Expected, 1)
 	assert.Equal(t, ")", result.Err.Expected[0])
 	assert.Equal(t, "", string(result.Err.Input))
+}
+
+func BenchmarkTerminated(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		Terminated(Tag("foo"), Char(')'))([]rune("foo)"))
+	}
 }
 
 func TestDelimited(t *testing.T) {
@@ -563,7 +681,7 @@ func TestDelimited(t *testing.T) {
 	assert.Equal(t, "", string(result.Remaining))
 }
 
-func TestDelimited_FailsOnMissingPrefix(t *testing.T) {
+func TestDelimitedFailsOnMissingPrefix(t *testing.T) {
 	t.Parallel()
 
 	// Arrange
@@ -580,7 +698,7 @@ func TestDelimited_FailsOnMissingPrefix(t *testing.T) {
 	assert.Equal(t, "foo)", string(result.Err.Input))
 }
 
-func TestDelimited_FailsOnMissingMainParser(t *testing.T) {
+func TestDelimitedFailsOnMissingMainParser(t *testing.T) {
 	t.Parallel()
 
 	// Arrange
@@ -597,7 +715,7 @@ func TestDelimited_FailsOnMissingMainParser(t *testing.T) {
 	assert.Equal(t, ")", string(result.Err.Input))
 }
 
-func TestDelimited_FailsOnMissingSuffix(t *testing.T) {
+func TestDelimitedFailsOnMissingSuffix(t *testing.T) {
 	t.Parallel()
 
 	// Arrange
@@ -612,4 +730,10 @@ func TestDelimited_FailsOnMissingSuffix(t *testing.T) {
 	assert.Len(t, result.Err.Expected, 1)
 	assert.Equal(t, ")", result.Err.Expected[0])
 	assert.Equal(t, "", string(result.Err.Input))
+}
+
+func BenchmarkDelimited(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		Delimited(Char('('), Tag("foo"), Char(')'))([]rune("(foo)"))
+	}
 }
