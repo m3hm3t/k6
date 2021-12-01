@@ -29,15 +29,16 @@ type RunStatus int
 
 // Possible run status values; iota isn't used intentionally
 const (
-	RunStatusCreated            RunStatus = -2
-	RunStatusValidated          RunStatus = -1
-	RunStatusQueued             RunStatus = 0
-	RunStatusInitializing       RunStatus = 1
-	RunStatusRunning            RunStatus = 2
-	RunStatusFinished           RunStatus = 3
-	RunStatusTimedOut           RunStatus = 4
-	RunStatusAbortedUser        RunStatus = 5
-	RunStatusAbortedSystem      RunStatus = 6
-	RunStatusAbortedScriptError RunStatus = 7
-	RunStatusAbortedThreshold   RunStatus = 8
+	RunStatusCreated                RunStatus = -2
+	RunStatusValidated              RunStatus = -1
+	RunStatusQueued                 RunStatus = 0
+	RunStatusInitializing           RunStatus = 1
+	RunStatusRunning                RunStatus = 2
+	RunStatusFinished               RunStatus = 3
+	RunStatusTimedOut               RunStatus = 4
+	RunStatusAbortedUser            RunStatus = 5
+	RunStatusAbortedSystem          RunStatus = 6
+	RunStatusAbortedScriptException RunStatus = 7
+	RunStatusAbortedThreshold       RunStatus = 8
+	RunStatusAbortedScript          RunStatus = 9 // When test.abort() is called
 )

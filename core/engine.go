@@ -31,6 +31,7 @@ import (
 	"gopkg.in/guregu/null.v3"
 
 	"go.k6.io/k6/errext"
+	"go.k6.io/k6/js/common"
 	"go.k6.io/k6/lib"
 	"go.k6.io/k6/lib/metrics"
 	"go.k6.io/k6/output"
@@ -258,31 +259,36 @@ func (e *Engine) startBackgroundProcesses(
 	thresholdAbortChan := make(chan struct{})
 	go func() {
 		defer processes.Done()
+		rs := lib.RunStatusFinished
+		defer func() { e.setRunStatus(rs) }()
+
 		select {
 		case err := <-runResult:
-			if err != nil {
-				e.logger.WithError(err).Debug("run: execution scheduler returned an error")
-				var serr errext.Exception
-				if errors.As(err, &serr) {
-					e.setRunStatus(lib.RunStatusAbortedScriptError)
-				} else {
-					e.setRunStatus(lib.RunStatusAbortedSystem)
-				}
-			} else {
+			if err == nil {
 				e.logger.Debug("run: execution scheduler terminated")
-				e.setRunStatus(lib.RunStatusFinished)
+				break
+			}
+			e.logger.WithError(err).Debug("run: execution scheduler returned an error")
+			var serr errext.Exception
+			switch {
+			case errors.As(err, &serr):
+				rs = lib.RunStatusAbortedScriptException
+			case common.IsInterruptError(err):
+				rs = lib.RunStatusAbortedScript
+			default:
+				rs = lib.RunStatusAbortedSystem
 			}
 		case <-runCtx.Done():
 			e.logger.Debug("run: context expired; exiting...")
-			e.setRunStatus(lib.RunStatusAbortedUser)
+			rs = lib.RunStatusAbortedUser
 		case <-e.stopChan:
 			runSubCancel()
 			e.logger.Debug("run: stopped by user; exiting...")
-			e.setRunStatus(lib.RunStatusAbortedUser)
+			rs = lib.RunStatusAbortedUser
 		case <-thresholdAbortChan:
 			e.logger.Debug("run: stopped by thresholds; exiting...")
 			runSubCancel()
-			e.setRunStatus(lib.RunStatusAbortedThreshold)
+			rs = lib.RunStatusAbortedThreshold
 		}
 	}()
 
