@@ -36,7 +36,7 @@ func TestParseAssertion(t *testing.T) {
 	rateAssertionResult := parser([]rune("rate>0.95"))
 	gaugeAssertionResult := parser([]rune("value<4000"))
 	counterAssertionResult := parser([]rune("count<100"))
-	controlCharactersResult := parser([]rune("med  \t<\t\t  200\r\n"))
+	controlCharactersResult := parser([]rune("med  <  200\r\n"))
 
 	// Assert
 	assert.Equal(t, []interface{}{string("p(99.9)"), "<", float64(300)}, trendAssertionResult.Payload)
@@ -49,7 +49,7 @@ func TestParseAssertion(t *testing.T) {
 	assert.Equal(t, "", string(counterAssertionResult.Remaining))
 	assert.Nil(t, controlCharactersResult.Err)
 	assert.Equal(t, []interface{}{"med", "<", float64(200)}, controlCharactersResult.Payload)
-	assert.Equal(t, "", string(controlCharactersResult.Remaining))
+	assert.Equal(t, "\r\n", string(controlCharactersResult.Remaining))
 }
 
 func BenchmarkParseAssertion(b *testing.B) {
