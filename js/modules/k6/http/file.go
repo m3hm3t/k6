@@ -55,10 +55,18 @@ func (h *HTTP) File(ctx context.Context, data interface{}, args ...string) FileD
 		}
 	}
 
-	dt, err := common.ToBytes(data)
-	if err != nil {
-		common.Throw(common.GetRuntime(ctx), err)
+	var dt []byte
+	var err error
+	immutableArrayBuffer, ok := data.(datamodule.WrappedImmutableArrayBuffer)
+	if !ok {
+		dt, err = common.ToBytes(data)
+		if err != nil {
+			common.Throw(common.GetRuntime(ctx), err)
+		}
+	} else {
+		dt = immutableArrayBuffer.Bytes()
 	}
+}
 
 	return FileData{
 		Data:        dt,

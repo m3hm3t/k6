@@ -51,7 +51,7 @@ type (
 	}
 
 	immutableArrays struct {
-		data map[string]immutableArrayBuffer
+		data map[string]ImmutableArrayBuffer
 		mu   sync.RWMutex
 	}
 )
@@ -68,7 +68,7 @@ func New() *RootModule {
 			data: make(map[string]sharedArray),
 		},
 		immutable: immutableArrays{
-			data: make(map[string]immutableArrayBuffer),
+			data: make(map[string]ImmutableArrayBuffer),
 		},
 	}
 }
@@ -81,6 +81,11 @@ func (rm *RootModule) NewModuleInstance(vu modules.VU) modules.Instance {
 		shared:    &rm.shared,
 		immutable: &rm.immutable,
 	}
+}
+
+// NewImmutableArrayBuffer
+func (rm *RootModule) GetOrCreateArrayBuffer(filename string, data []byte) ImmutableArrayBuffer {
+	return rm.immutable.get(filename, data)
 }
 
 // Exports returns the exports of the data module.
@@ -169,16 +174,12 @@ func (d *Data) immutableArray(constructor goja.ConstructorCall) *goja.Object {
 		common.Throw(runtime, errors.New("empty filename provided to ImmutableArrayBuffer's constructor"))
 	}
 
-	size := constructor.Argument(1).ToInteger()
-	if size < 0 {
-		common.Throw(runtime, errors.New("negative size provided to ImmutableArrayBuffer's constructor"))
-	}
-
-	array := d.immutable.get(filename, uint(size))
-	return array.wrap(runtime).ToObject(runtime)
+	// FIXME: nil is a leftover, some data should actually make its way here?
+	array := d.immutable.get(filename, nil)
+	return array.Wrap(runtime).ToObject(runtime)
 }
 
-func (i *immutableArrays) get(filename string, size uint) immutableArrayBuffer {
+func (i *immutableArrays) get(filename string, data []byte) ImmutableArrayBuffer {
 	i.mu.RLock()
 	array, exists := i.data[filename]
 	i.mu.RUnlock()
@@ -196,7 +197,8 @@ func (i *immutableArrays) get(filename string, size uint) immutableArrayBuffer {
 		// in the meantime).
 		array, exists = i.data[filename]
 		if !exists {
-			i.data[filename] = immutableArrayBuffer{arr: make([]byte, size)}
+			array = ImmutableArrayBuffer{arr: data}
+			i.data[filename] = array
 		}
 	}
 
